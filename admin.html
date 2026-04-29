@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 - 장비 사용 일지</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --surface: #1a2130;
+    --surface-2: #242d40;
+    --border: #2f3a52;
+    --text: #e8ecf4;
+    --text-dim: #8a95ab;
+    --accent: #4ade80;
+    --danger: #f87171;
+    --blue: #60a5fa;
+    --warning: #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", "Apple SD Gothic Neo", sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* PIN 화면 */
+  .pin-screen {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .pin-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 32px;
+    max-width: 380px; width: 100%;
+    text-align: center;
+  }
+  .pin-box h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+  .pin-box p { color: var(--text-dim); margin-bottom: 28px; font-size: 14px; }
+  .pin-display {
+    display: flex; justify-content: center; gap: 14px; margin-bottom: 24px;
+  }
+  .pin-dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    transition: all 0.15s;
+  }
+  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+  .pin-error {
+    color: var(--danger);
+    font-size: 13px; height: 18px; margin-bottom: 16px;
+  }
+  .pin-keypad {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  .pin-key {
+    height: 60px;
+    background: var(--surface-2);
+    border: none; border-radius: 12px;
+    color: var(--text);
+    font-size: 22px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .pin-key:hover { background: var(--border); }
+  .pin-key:active { transform: scale(0.95); }
+
+  /* 메인 */
+  .header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 {
+    font-size: 20px; font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .open-app-btn {
+    padding: 8px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; text-decoration: none;
+  }
+  .open-app-btn:hover { background: var(--border); }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+  /* 탭 */
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--surface);
+    padding: 4px; border-radius: 12px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+  }
+  .tab {
+    flex: 1; min-width: 110px;
+    padding: 12px;
+    background: transparent; border: none;
+    color: var(--text-dim);
+    font-size: 14px; font-weight: 600;
+    border-radius: 9px; cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab.active { background: var(--surface-2); color: var(--text); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* 통계 카드 */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px; margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px;
+    border-radius: 12px;
+  }
+  .stat-value {
+    font-size: 32px; font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 12px; color: var(--text-dim);
+    margin-top: 6px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
+  /* 폼 */
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: end;
+  }
+  .form-group label {
+    display: block;
+    font-size: 12px; color: var(--text-dim);
+    margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .form-group input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .form-group input:focus { outline: none; border-color: var(--blue); }
+
+  .btn {
+    padding: 12px 18px;
+    border: none; border-radius: 9px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: var(--bg); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-secondary { background: var(--surface-2); color: var(--text); }
+
+  /* 리스트 */
+  .list {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+  .list-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: 8px;
+  }
+  .list-item:hover { background: var(--surface-2); }
+  .list-item-info { flex: 1; }
+  .list-item-main { font-size: 14px; font-weight: 600; }
+  .list-item-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    cursor: pointer; font-size: 14px;
+  }
+  .icon-btn:hover { background: var(--surface-2); color: var(--danger); }
+
+  /* 테이블 */
+  .table-controls {
+    display: flex; gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .table-controls input {
+    flex: 1; min-width: 200px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: auto;
+    max-height: 600px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td {
+    text-align: left;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  th {
+    background: var(--surface-2);
+    color: var(--text-dim);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    position: sticky; top: 0;
+  }
+  .empty-row { text-align: center !important; padding: 40px !important; color: var(--text-dim); }
+
+  /* 토스트 */
+  .toast {
+    position: fixed; top: 24px; right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px; font-weight: 500;
+    z-index: 200;
+    transform: translateX(120%);
+    transition: transform 0.3s;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateX(0); }
+  .toast.success { border-color: var(--accent); }
+  .toast.error { border-color: var(--danger); }
+
+  /* 경고 박스 */
+  .warning-box {
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid var(--warning);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: var(--warning);
+    line-height: 1.6;
+  }
+  .warning-box strong { color: var(--warning); }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  @media (max-width: 768px) {
+    .form-row { grid-template-columns: 1fr; }
+    .header { padding: 14px 18px; }
+    .container { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PIN 화면 -->
+<div class="pin-screen" id="pin-screen">
+  <div class="pin-box">
+    <h1>🔒 관리자 로그인</h1>
+    <p>PIN 번호를 입력하세요</p>
+    <div class="pin-display">
+      <div class="pin-dot" id="pd-0"></div>
+      <div class="pin-dot" id="pd-1"></div>
+      <div class="pin-dot" id="pd-2"></div>
+      <div class="pin-dot" id="pd-3"></div>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key" onclick="pinDelete()" style="color:var(--text-dim)">⌫</button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key" onclick="pinClear()" style="color:var(--text-dim);font-size:14px">CLR</button>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 -->
+<div id="admin-main" style="display:none">
+  <div class="header">
+    <h1>⚙️ 장비 사용 일지 관리자</h1>
+    <div class="header-right">
+      <a href="index.html" class="open-app-btn" target="_blank">📱 사용자 페이지 열기</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="warning-box" id="config-warning" style="display:none">
+      <strong>⚠️ Config 미설정</strong><br>
+      <span id="config-warning-msg"></span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showPanel('panel-logs', this)">📋 기록</button>
+      <button class="tab" onclick="showPanel('panel-users', this)">👥 사용자</button>
+      <button class="tab" onclick="showPanel('panel-prs', this)">🧪 PR 종류</button>
+      <button class="tab" onclick="showPanel('panel-equipment', this)">⚙️ 장비</button>
+    </div>
+
+    <!-- 기록 패널 -->
+    <div class="panel active" id="panel-logs">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-total">-</div>
+          <div class="stat-label">총 기록 수</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-today">-</div>
+          <div class="stat-label">오늘 기록</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-week">-</div>
+          <div class="stat-label">최근 7일</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-samples">-</div>
+          <div class="stat-label">총 샘플 수</div>
+        </div>
+      </div>
+
+      <div class="table-controls">
+        <input type="text" id="search" placeholder="🔍 사용자/PR/메모로 검색..." oninput="renderLogs()">
+        <button class="btn btn-primary" onclick="exportCSV()">📥 CSV 내보내기</button>
+        <button class="btn btn-secondary" onclick="loadLogs()">🔄 새로고침</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>일시</th>
+              <th>사용자</th>
+              <th>PR</th>
+              <th>샘플</th>
+              <th>특이사항</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="logs-body">
+            <tr><td colspan="6" class="empty-row">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 사용자 패널 -->
+    <div class="panel" id="panel-users">
+      <h3 style="margin-bottom:14px">사용자 추가</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>이름 *</label>
+          <input type="text" id="new-user-name" placeholder="홍길동">
+        </div>
+        <div class="form-group">
+          <label>학번/사번 (선택)</label>
+          <input type="text" id="new-user-id" placeholder="2024-12345">
+        </div>
+        <button class="btn btn-primary" onclick="addUser()">+ 추가</button>
+      </div>
+      <h3 style="margin:20px 0 12px">등록된 사용자</h3>
+      <div class="list" id="users-list">
+        <div style="padding:24px;text-align:center;color:var(--text-dim)">로딩 중...</div>
+      </div>
+    </div>
+
+    <!-- PR 패널 -->
+    <div class="panel" id="panel-prs">
+      <h3 style="margin-bottom:14px">PR 종류 추가</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>PR 이름 *</label>
+          <input type="text" id="new-pr-name" placeholder="예: AZ5214E">
+        </div>
+        <div class="form-group">
+          <label>설명/타입 (선택)</label>
+          <input type="text" id="new-pr-desc" placeholder="예: Negative tone">
+        </div>
+        <button class="btn btn-primary" onclick="addPR()">+ 추가</button>
+      </div>
+      <h3 style="margin:20px 0 12px">등록된 PR 종류</h3>
+      <div class="list" id="prs-list">
+        <div style="padding:24px;text-align:center;color:var(--text-dim)">로딩 중...</div>
+      </div>
+    </div>
+
+    <!-- 장비 패널 -->
+    <div class="panel" id="panel-equipment">
+      <h3 style="margin-bottom:14px">장비 정보</h3>
+      <div class="form-group" style="margin-bottom:14px;max-width:600px">
+        <label>장비명 *</label>
+        <input type="text" id="eq-name" placeholder="예: Spin Coater">
+      </div>
+      <div class="form-group" style="margin-bottom:14px;max-width:600px">
+        <label>위치/설명</label>
+        <input type="text" id="eq-location" placeholder="예: 302동 501호">
+      </div>
+      <button class="btn btn-primary" onclick="saveEquipment()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+// ===== Supabase REST API (Secret Key 사용 - 모든 권한) =====
+function sbHeaders() {
+  return {
+    'apikey': SUPABASE_PUBLISHABLE_KEY,
+    'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+    'Content-Type': 'application/json'
+  };
+}
+
+async function sbGet(path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: sbHeaders() });
+  if (!res.ok) throw new Error(`GET ${path}: ${res.status}`);
+  return res.json();
+}
+
+async function sbInsert(table, data) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: { ...sbHeaders(), 'Prefer': 'return=representation' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(`INSERT ${table}: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+async function sbUpdate(table, id, data) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: sbHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(`UPDATE ${table}: ${res.status}`);
+}
+
+async function sbDelete(table, id) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: sbHeaders()
+  });
+  if (!res.ok) throw new Error(`DELETE ${table}: ${res.status}`);
+}
+
+// ===== STATE =====
+let users = [], prs = [], logs = [], equipment = null;
+
+// ===== PIN =====
+let pinInput = '';
+
+async function sha256(text) {
+  const buf = new TextEncoder().encode(text);
+  const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hashBuf))
+    .map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function pinPress(d) {
+  if (pinInput.length >= 4) return;
+  pinInput += d;
+  updatePinDisplay();
+  if (pinInput.length === 4) {
+    setTimeout(async () => {
+      const inputHash = await sha256(pinInput);
+      if (inputHash === ADMIN_PIN_HASH) {
+        document.getElementById('pin-screen').style.display = 'none';
+        document.getElementById('admin-main').style.display = 'block';
+        init();
+      } else {
+        document.getElementById('pin-error').textContent = 'PIN이 올바르지 않습니다';
+        pinInput = '';
+        updatePinDisplay();
+      }
+    }, 150);
+  }
+}
+
+function pinDelete() { pinInput = pinInput.slice(0, -1); updatePinDisplay(); }
+function pinClear() { pinInput = ''; updatePinDisplay(); document.getElementById('pin-error').textContent = ''; }
+
+function updatePinDisplay() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`pd-${i}`).classList.toggle('filled', i < pinInput.length);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('pin-screen').style.display === 'none') return;
+  if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+  else if (e.key === 'Backspace') pinDelete();
+});
+
+// ===== TOAST =====
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(()=>{ t.className = 'toast'; }, 2800);
+}
+
+// ===== INIT =====
+async function init() {
+  // config 검증
+  if (!SUPABASE_URL || SUPABASE_URL.includes('여기에_') ||
+      !SUPABASE_SECRET_KEY || SUPABASE_SECRET_KEY.includes('여기에_')) {
+    document.getElementById('config-warning').style.display = 'block';
+    document.getElementById('config-warning-msg').textContent =
+      'config.js에 SUPABASE_URL과 SUPABASE_SECRET_KEY를 입력하세요.';
+    return;
+  }
+
+  await Promise.all([loadUsers(), loadPRs(), loadLogs(), loadEquipment()]);
+}
+
+function showPanel(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ===== USERS =====
+async function loadUsers() {
+  try {
+    users = await sbGet('users?select=*&order=name.asc');
+    renderUsers();
+  } catch (e) { toast('사용자 로드 실패', 'error'); console.error(e); }
+}
+
+function renderUsers() {
+  const list = document.getElementById('users-list');
+  if (users.length === 0) {
+    list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-dim)">등록된 사용자가 없습니다</div>';
+    return;
+  }
+  list.innerHTML = users.map(u => `
+    <div class="list-item">
+      <div class="list-item-info">
+        <div class="list-item-main">${escapeHtml(u.name)}</div>
+        ${u.student_id ? `<div class="list-item-sub">${escapeHtml(u.student_id)}</div>` : ''}
+      </div>
+      <button class="icon-btn" onclick="removeUser(${u.id})">🗑</button>
+    </div>
+  `).join('');
+}
+
+async function addUser() {
+  const name = document.getElementById('new-user-name').value.trim();
+  const studentId = document.getElementById('new-user-id').value.trim();
+  if (!name) { toast('이름을 입력하세요', 'error'); return; }
+  try {
+    await sbInsert('users', { name, student_id: studentId || null });
+    document.getElementById('new-user-name').value = '';
+    document.getElementById('new-user-id').value = '';
+    await loadUsers();
+    toast(`✓ ${name} 추가됨`);
+  } catch (e) { toast('추가 실패', 'error'); console.error(e); }
+}
+
+async function removeUser(id) {
+  if (!confirm('이 사용자를 삭제하시겠습니까?\n(기존 기록은 유지됩니다)')) return;
+  try {
+    await sbDelete('users', id);
+    await loadUsers();
+    toast('삭제됨');
+  } catch (e) { toast('삭제 실패', 'error'); console.error(e); }
+}
+
+// ===== PRs =====
+async function loadPRs() {
+  try {
+    prs = await sbGet('prs?select=*&order=name.asc');
+    renderPRs();
+  } catch (e) { toast('PR 로드 실패', 'error'); console.error(e); }
+}
+
+function renderPRs() {
+  const list = document.getElementById('prs-list');
+  if (prs.length === 0) {
+    list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-dim)">등록된 PR이 없습니다</div>';
+    return;
+  }
+  list.innerHTML = prs.map(p => `
+    <div class="list-item">
+      <div class="list-item-info">
+        <div class="list-item-main">${escapeHtml(p.name)}</div>
+        ${p.description ? `<div class="list-item-sub">${escapeHtml(p.description)}</div>` : ''}
+      </div>
+      <button class="icon-btn" onclick="removePR(${p.id})">🗑</button>
+    </div>
+  `).join('');
+}
+
+async function addPR() {
+  const name = document.getElementById('new-pr-name').value.trim();
+  const description = document.getElementById('new-pr-desc').value.trim();
+  if (!name) { toast('PR 이름을 입력하세요', 'error'); return; }
+  try {
+    await sbInsert('prs', { name, description: description || null });
+    document.getElementById('new-pr-name').value = '';
+    document.getElementById('new-pr-desc').value = '';
+    await loadPRs();
+    toast(`✓ ${name} 추가됨`);
+  } catch (e) { toast('추가 실패', 'error'); console.error(e); }
+}
+
+async function removePR(id) {
+  if (!confirm('이 PR을 삭제하시겠습니까?\n(기존 기록은 유지됩니다)')) return;
+  try {
+    await sbDelete('prs', id);
+    await loadPRs();
+    toast('삭제됨');
+  } catch (e) { toast('삭제 실패', 'error'); console.error(e); }
+}
+
+// ===== EQUIPMENT =====
+async function loadEquipment() {
+  try {
+    const data = await sbGet('equipment?select=*&limit=1');
+    if (data.length > 0) {
+      equipment = data[0];
+      document.getElementById('eq-name').value = equipment.name || '';
+      document.getElementById('eq-location').value = equipment.location || '';
+    }
+  } catch (e) { console.error(e); }
+}
+
+async function saveEquipment() {
+  const name = document.getElementById('eq-name').value.trim();
+  const location = document.getElementById('eq-location').value.trim();
+  if (!name) { toast('장비명을 입력하세요', 'error'); return; }
+  try {
+    if (equipment) {
+      await sbUpdate('equipment', equipment.id, { name, location, updated_at: new Date().toISOString() });
+    } else {
+      await sbInsert('equipment', { name, location });
+    }
+    await loadEquipment();
+    toast('✓ 저장됨');
+  } catch (e) { toast('저장 실패', 'error'); console.error(e); }
+}
+
+// ===== LOGS =====
+async function loadLogs() {
+  try {
+    logs = await sbGet('logs?select=*&order=created_at.desc&limit=1000');
+    renderLogs();
+    renderStats();
+  } catch (e) { toast('기록 로드 실패', 'error'); console.error(e); }
+}
+
+function renderLogs() {
+  const body = document.getElementById('logs-body');
+  const search = document.getElementById('search').value.toLowerCase().trim();
+  const filtered = search ? logs.filter(l => {
+    const u = users.find(x => x.id === l.user_id);
+    const p = prs.find(x => x.id === l.pr_id);
+    const userName = (u?.name || l.user_name_snapshot || '').toLowerCase();
+    const prName = (p?.name || l.pr_name_snapshot || '').toLowerCase();
+    const note = (l.note || '').toLowerCase();
+    return userName.includes(search) || prName.includes(search) || note.includes(search);
+  }) : logs;
+
+  if (filtered.length === 0) {
+    body.innerHTML = '<tr><td colspan="6" class="empty-row">기록이 없습니다</td></tr>';
+    return;
+  }
+
+  body.innerHTML = filtered.map(log => {
+    const u = users.find(x => x.id === log.user_id);
+    const p = prs.find(x => x.id === log.pr_id);
+    const userName = u ? u.name : (log.user_name_snapshot || '(삭제됨)');
+    const prName = p ? p.name : (log.pr_name_snapshot || '(삭제됨)');
+    return `
+      <tr>
+        <td>${formatDateTime(new Date(log.created_at))}</td>
+        <td>${escapeHtml(userName)}</td>
+        <td>${escapeHtml(prName)}</td>
+        <td style="text-align:center">${log.sample_count}</td>
+        <td>${escapeHtml(log.note || '-')}</td>
+        <td><button class="icon-btn" onclick="deleteLog(${log.id})">🗑</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function deleteLog(id) {
+  if (!confirm('이 기록을 삭제하시겠습니까?')) return;
+  try {
+    await sbDelete('logs', id);
+    await loadLogs();
+    toast('삭제됨');
+  } catch (e) { toast('삭제 실패', 'error'); console.error(e); }
+}
+
+function renderStats() {
+  document.getElementById('stat-total').textContent = logs.length;
+  const now = Date.now();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayCount = logs.filter(l => new Date(l.created_at).getTime() >= today.getTime()).length;
+  document.getElementById('stat-today').textContent = todayCount;
+  const weekAgo = now - 7 * 24 * 3600 * 1000;
+  const weekCount = logs.filter(l => new Date(l.created_at).getTime() >= weekAgo).length;
+  document.getElementById('stat-week').textContent = weekCount;
+  const totalSamples = logs.reduce((sum, l) => sum + (l.sample_count || 0), 0);
+  document.getElementById('stat-samples').textContent = totalSamples;
+}
+
+// ===== CSV =====
+function exportCSV() {
+  if (logs.length === 0) { toast('내보낼 기록이 없습니다', 'error'); return; }
+  const headers = ['일시','사용자','학번/사번','PR','PR 설명','샘플 갯수','특이사항'];
+  const rows = logs.map(log => {
+    const u = users.find(x => x.id === log.user_id);
+    const p = prs.find(x => x.id === log.pr_id);
+    return [
+      formatDateTime(new Date(log.created_at)),
+      u ? u.name : (log.user_name_snapshot || '(삭제됨)'),
+      u ? (u.student_id || '') : '',
+      p ? p.name : (log.pr_name_snapshot || '(삭제됨)'),
+      p ? (p.description || '') : '',
+      log.sample_count,
+      (log.note || '').replace(/"/g, '""')
+    ];
+  });
+  const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `${equipment?.name || 'equipment'}_log_${ts}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ CSV 다운로드 완료');
+}
+
+// ===== HELPERS =====
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+function formatDateTime(d) {
+  const y = d.getFullYear();
+  const mo = String(d.getMonth()+1).padStart(2,'0');
+  const da = String(d.getDate()).padStart(2,'0');
+  const h = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${y}-${mo}-${da} ${h}:${mi}`;
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>장비 사용 일지</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --surface: #1a2130;
+    --surface-2: #242d40;
+    --border: #2f3a52;
+    --text: #e8ecf4;
+    --text-dim: #8a95ab;
+    --accent: #4ade80;
+    --danger: #f87171;
+    --blue: #60a5fa;
+    --purple: #a78bfa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", "Apple SD Gothic Neo", sans-serif;
+    background: var(--bg); color: var(--text);
+    user-select: none; -webkit-user-select: none;
+  }
+  button, input, textarea { font-family: inherit; font-size: inherit; }
+  .app { height: 100vh; display: flex; flex-direction: column; }
+
+  .header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    flex-shrink: 0;
+  }
+  .equipment-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--blue) 100%);
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .equipment-name { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
+  .equipment-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .header-spacer { flex: 1; }
+  .clock {
+    font-size: 16px; font-weight: 600;
+    font-variant-numeric: tabular-nums; color: var(--text-dim);
+  }
+
+  .main { flex: 1; overflow-y: auto; padding: 18px 20px; }
+  .section { margin-bottom: 20px; }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .section-title {
+    font-size: 12px; font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.12em;
+  }
+  .section-value { font-size: 13px; color: var(--accent); font-weight: 600; }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+  }
+  .option-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    min-height: 80px;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    gap: 5px;
+  }
+  .option-card:active { transform: scale(0.97); }
+  .option-card.selected {
+    background: var(--surface-2);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15);
+  }
+  .option-card .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    color: var(--bg); margin-bottom: 3px;
+  }
+  .option-card .pr-icon {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--purple), var(--blue));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    color: var(--bg); margin-bottom: 3px;
+  }
+  .option-name { font-size: 14px; font-weight: 600; line-height: 1.2; }
+  .option-sub { font-size: 11px; color: var(--text-dim); }
+
+  .counter {
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .counter-btn {
+    width: 56px; height: 56px;
+    border-radius: 50%; border: none;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 28px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .counter-btn:active:not(:disabled) {
+    background: var(--accent); color: var(--bg);
+    transform: scale(0.92);
+  }
+  .counter-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .counter-value {
+    font-size: 48px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    min-width: 80px; text-align: center; line-height: 1;
+  }
+  .counter-label {
+    font-size: 11px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-top: 4px; text-align: center;
+  }
+
+  .note-input {
+    width: 100%;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    color: var(--text);
+    font-size: 14px;
+    resize: none; height: 64px;
+  }
+  .note-input:focus { outline: none; border-color: var(--blue); }
+
+  .empty-state {
+    text-align: center; padding: 24px 16px;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    grid-column: 1/-1;
+  }
+  .empty-state .big { font-size: 32px; margin-bottom: 6px; }
+  .empty-state .title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .empty-state .sub { font-size: 12px; }
+
+  .bottom-action {
+    flex-shrink: 0;
+    padding: 14px 20px 20px;
+    background: var(--surface);
+    border-top: 2px solid var(--border);
+  }
+  .record-btn {
+    width: 100%; height: 70px;
+    border: none; border-radius: 16px;
+    font-size: 20px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    background: var(--accent); color: var(--bg);
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .record-btn:active:not(:disabled) { transform: scale(0.98); }
+  .record-btn:disabled {
+    background: var(--surface-2);
+    color: var(--text-dim);
+    cursor: not-allowed;
+  }
+  .record-btn.loading { pointer-events: none; opacity: 0.7; }
+
+  .toast {
+    position: fixed; bottom: 100px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    opacity: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px; font-weight: 500;
+    z-index: 200;
+    transition: all 0.3s;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    max-width: 90%; text-align: center;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast.success { border-color: var(--accent); }
+  .toast.error { border-color: var(--danger); }
+
+  .loading-screen {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+    z-index: 1000;
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 4px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--text-dim); font-size: 14px; }
+
+  .error-screen {
+    padding: 40px 24px; text-align: center;
+  }
+  .error-screen .icon { font-size: 48px; margin-bottom: 16px; }
+  .error-screen .title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .error-screen .msg { font-size: 14px; color: var(--text-dim); margin-bottom: 20px; line-height: 1.6; }
+  .error-screen .btn {
+    padding: 12px 24px;
+    background: var(--accent); color: var(--bg);
+    border: none; border-radius: 10px;
+    font-weight: 600; cursor: pointer;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 480px) {
+    .options-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+    .counter-value { font-size: 40px; }
+    .counter-btn { width: 50px; height: 50px; font-size: 24px; }
+    .equipment-name { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">불러오는 중...</div>
+</div>
+
+<div class="app" id="app" style="display:none">
+  <div class="header">
+    <div class="equipment-icon">⚙️</div>
+    <div>
+      <div class="equipment-name" id="equipment-name">장비 사용 일지</div>
+      <div class="equipment-sub" id="equipment-sub">로딩 중...</div>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="clock" id="clock">--:--</div>
+  </div>
+
+  <div class="main">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">1. 사용자</div>
+        <div class="section-value" id="sel-user-text"></div>
+      </div>
+      <div class="options-grid" id="users-grid"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">2. PR 종류</div>
+        <div class="section-value" id="sel-pr-text"></div>
+      </div>
+      <div class="options-grid" id="prs-grid"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">3. 샘플 갯수</div>
+        <div class="section-value" id="sel-count-text">1 개</div>
+      </div>
+      <div class="counter">
+        <button class="counter-btn" id="btn-minus" onclick="changeCount(-1)">−</button>
+        <div>
+          <div class="counter-value" id="count-value">1</div>
+          <div class="counter-label">SAMPLES</div>
+        </div>
+        <button class="counter-btn" id="btn-plus" onclick="changeCount(1)">+</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">특이사항 (선택)</div>
+      </div>
+      <textarea class="note-input" id="note-input" placeholder="예: 시료 파손, 교정 필요 등"></textarea>
+    </div>
+  </div>
+
+  <div class="bottom-action">
+    <button class="record-btn" id="btn-record" disabled onclick="recordEntry()">
+      ✓ 기록
+    </button>
+  </div>
+</div>
+
+<div class="error-screen" id="error" style="display:none">
+  <div class="icon">⚠️</div>
+  <div class="title" id="error-title">연결 실패</div>
+  <div class="msg" id="error-msg"></div>
+  <button class="btn" onclick="location.reload()">다시 시도</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+// ===== Supabase REST API 호출 함수 =====
+async function sbGet(path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_PUBLISHABLE_KEY,
+      'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+    }
+  });
+  if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
+  return res.json();
+}
+
+async function sbInsert(table, data) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_PUBLISHABLE_KEY,
+      'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`INSERT ${table} failed: ${res.status} ${txt}`);
+  }
+  return true;
+}
+
+// ===== STATE =====
+let state = {
+  equipment: { name: '장비 사용 일지', location: '' },
+  users: [],
+  prs: [],
+  selection: { userId: null, prId: null, count: 1 }
+};
+
+// ===== INIT =====
+async function init() {
+  try {
+    // config 검증
+    if (!SUPABASE_URL || SUPABASE_URL.includes('여기에_')) {
+      throw new Error('config.js에 Supabase URL을 입력하세요');
+    }
+    if (!SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY.includes('여기에_')) {
+      throw new Error('config.js에 Publishable Key를 입력하세요');
+    }
+
+    const [equipment, users, prs] = await Promise.all([
+      sbGet('equipment?select=*&limit=1'),
+      sbGet('users?select=*&order=name.asc'),
+      sbGet('prs?select=*&order=name.asc')
+    ]);
+
+    if (equipment.length > 0) state.equipment = equipment[0];
+    state.users = users;
+    state.prs = prs;
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    render();
+  } catch (e) {
+    console.error(e);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'block';
+    document.getElementById('error-msg').textContent = e.message;
+  }
+}
+
+// ===== CLOCK =====
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${h}:${m}`;
+}
+setInterval(updateClock, 10000);
+updateClock();
+
+// ===== TOAST =====
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(()=>{ t.className = 'toast'; }, 2800);
+}
+
+// ===== RENDER =====
+function render() {
+  document.getElementById('equipment-name').textContent = state.equipment.name || '장비 사용 일지';
+  document.getElementById('equipment-sub').textContent = state.equipment.location || '';
+  renderUsers();
+  renderPRs();
+  renderCounter();
+  updateRecordButton();
+}
+
+function renderUsers() {
+  const grid = document.getElementById('users-grid');
+  if (state.users.length === 0) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="big">👥</div>
+      <div class="title">등록된 사용자가 없습니다</div>
+      <div class="sub">관리자에게 등록을 요청하세요</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = state.users.map(u => `
+    <div class="option-card ${state.selection.userId === u.id ? 'selected' : ''}" onclick="selectUser(${u.id})">
+      <div class="avatar">${escapeHtml(u.name.charAt(0).toUpperCase())}</div>
+      <div class="option-name">${escapeHtml(u.name)}</div>
+      ${u.student_id ? `<div class="option-sub">${escapeHtml(u.student_id)}</div>` : ''}
+    </div>
+  `).join('');
+  const u = state.users.find(x => x.id === state.selection.userId);
+  document.getElementById('sel-user-text').textContent = u ? `✓ ${u.name}` : '';
+}
+
+function renderPRs() {
+  const grid = document.getElementById('prs-grid');
+  if (state.prs.length === 0) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="big">🧪</div>
+      <div class="title">등록된 PR이 없습니다</div>
+      <div class="sub">관리자에게 등록을 요청하세요</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = state.prs.map(p => `
+    <div class="option-card ${state.selection.prId === p.id ? 'selected' : ''}" onclick="selectPR(${p.id})">
+      <div class="pr-icon">${escapeHtml(p.name.charAt(0).toUpperCase())}</div>
+      <div class="option-name">${escapeHtml(p.name)}</div>
+      ${p.description ? `<div class="option-sub">${escapeHtml(p.description)}</div>` : ''}
+    </div>
+  `).join('');
+  const p = state.prs.find(x => x.id === state.selection.prId);
+  document.getElementById('sel-pr-text').textContent = p ? `✓ ${p.name}` : '';
+}
+
+function renderCounter() {
+  const c = state.selection.count;
+  document.getElementById('count-value').textContent = c;
+  document.getElementById('sel-count-text').textContent = `${c} 개`;
+  document.getElementById('btn-minus').disabled = c <= 1;
+  document.getElementById('btn-plus').disabled = c >= 20;
+}
+
+function selectUser(id) {
+  state.selection.userId = state.selection.userId === id ? null : id;
+  renderUsers();
+  updateRecordButton();
+}
+
+function selectPR(id) {
+  state.selection.prId = state.selection.prId === id ? null : id;
+  renderPRs();
+  updateRecordButton();
+}
+
+function changeCount(delta) {
+  const next = state.selection.count + delta;
+  if (next < 1 || next > 20) return;
+  state.selection.count = next;
+  renderCounter();
+}
+
+function updateRecordButton() {
+  const ok = state.selection.userId && state.selection.prId;
+  document.getElementById('btn-record').disabled = !ok;
+}
+
+async function recordEntry() {
+  if (!state.selection.userId || !state.selection.prId) return;
+
+  const btn = document.getElementById('btn-record');
+  btn.classList.add('loading');
+  btn.textContent = '저장 중...';
+
+  const note = document.getElementById('note-input').value.trim();
+  const user = state.users.find(x => x.id === state.selection.userId);
+  const pr = state.prs.find(x => x.id === state.selection.prId);
+
+  try {
+    await sbInsert('logs', {
+      user_id: state.selection.userId,
+      pr_id: state.selection.prId,
+      user_name_snapshot: user?.name || null,
+      pr_name_snapshot: pr?.name || null,
+      sample_count: state.selection.count,
+      note: note || null
+    });
+
+    // 초기화 (사용자만 유지)
+    state.selection = { userId: state.selection.userId, prId: null, count: 1 };
+    document.getElementById('note-input').value = '';
+    render();
+    toast(`✓ 기록 완료: ${user?.name} · ${pr?.name} · ${state.selection.count === 1 ? '1' : ''}개`, 'success');
+    btn.textContent = '✓ 기록';
+    btn.classList.remove('loading');
+  } catch (e) {
+    console.error(e);
+    toast('❌ 저장 실패. 인터넷을 확인하세요', 'error');
+    btn.textContent = '✓ 기록';
+    btn.classList.remove('loading');
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+// 시작
+init();
+</script>
+
+</body>
+</html>
