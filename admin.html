@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 - 장비 사용 일지</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <style>
   :root {
     --bg: #0f1419;
@@ -16,6 +18,8 @@
     --danger: #f87171;
     --blue: #60a5fa;
     --warning: #fbbf24;
+    --purple: #a78bfa;
+    --orange: #fb923c;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -24,7 +28,7 @@
     min-height: 100vh;
   }
 
-  /* PIN 화면 */
+  /* PIN */
   .pin-screen {
     min-height: 100vh;
     display: flex; align-items: center; justify-content: center;
@@ -40,9 +44,7 @@
   }
   .pin-box h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
   .pin-box p { color: var(--text-dim); margin-bottom: 28px; font-size: 14px; }
-  .pin-display {
-    display: flex; justify-content: center; gap: 14px; margin-bottom: 24px;
-  }
+  .pin-display { display: flex; justify-content: center; gap: 14px; margin-bottom: 24px; }
   .pin-dot {
     width: 18px; height: 18px;
     border-radius: 50%;
@@ -50,13 +52,8 @@
     transition: all 0.15s;
   }
   .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
-  .pin-error {
-    color: var(--danger);
-    font-size: 13px; height: 18px; margin-bottom: 16px;
-  }
-  .pin-keypad {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-  }
+  .pin-error { color: var(--danger); font-size: 13px; height: 18px; margin-bottom: 16px; }
+  .pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .pin-key {
     height: 60px;
     background: var(--surface-2);
@@ -69,7 +66,7 @@
   .pin-key:hover { background: var(--border); }
   .pin-key:active { transform: scale(0.95); }
 
-  /* 메인 */
+  /* HEADER */
   .header {
     background: var(--surface);
     border-bottom: 2px solid var(--border);
@@ -94,7 +91,7 @@
 
   .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
 
-  /* 탭 */
+  /* TABS */
   .tabs {
     display: flex; gap: 4px;
     background: var(--surface);
@@ -103,7 +100,7 @@
     overflow-x: auto;
   }
   .tab {
-    flex: 1; min-width: 110px;
+    flex: 1; min-width: 100px;
     padding: 12px;
     background: transparent; border: none;
     color: var(--text-dim);
@@ -116,7 +113,7 @@
   .panel { display: none; }
   .panel.active { display: block; }
 
-  /* 통계 카드 */
+  /* STATS */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -140,7 +137,82 @@
     text-transform: uppercase; letter-spacing: 0.05em;
   }
 
-  /* 폼 */
+  /* CHARTS */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .chart-card.full { grid-column: 1 / -1; }
+  .chart-title {
+    font-size: 14px; font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chart-title .toggle {
+    display: flex; gap: 4px;
+    background: var(--bg);
+    padding: 3px; border-radius: 7px;
+  }
+  .chart-title .toggle button {
+    padding: 4px 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 11px; font-weight: 600;
+    border-radius: 5px; cursor: pointer;
+  }
+  .chart-title .toggle button.active {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .chart-container {
+    position: relative;
+    height: 280px;
+  }
+  .chart-empty {
+    height: 280px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  /* PPT EXPORT BOX */
+  .ppt-export-box {
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.08), rgba(96, 165, 250, 0.08));
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 20px;
+    display: flex; gap: 12px; align-items: center;
+    flex-wrap: wrap;
+  }
+  .ppt-export-box .icon { font-size: 28px; }
+  .ppt-export-box .info { flex: 1; min-width: 200px; }
+  .ppt-export-box .title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .ppt-export-box .sub { font-size: 12px; color: var(--text-dim); }
+  .ppt-export-box select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  /* FORMS */
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr auto;
@@ -171,14 +243,15 @@
     border: none; border-radius: 9px;
     font-size: 14px; font-weight: 600;
     cursor: pointer; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
   }
   .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-primary { background: var(--accent); color: var(--bg); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-danger { background: var(--danger); color: white; }
   .btn-secondary { background: var(--surface-2); color: var(--text); }
 
-  /* 리스트 */
+  /* LIST */
   .list {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -206,7 +279,7 @@
   }
   .icon-btn:hover { background: var(--surface-2); color: var(--danger); }
 
-  /* 테이블 */
+  /* TABLE */
   .table-controls {
     display: flex; gap: 10px;
     margin-bottom: 12px;
@@ -245,8 +318,20 @@
     position: sticky; top: 0;
   }
   .empty-row { text-align: center !important; padding: 40px !important; color: var(--text-dim); }
+  .photo-thumbs {
+    display: flex; gap: 4px;
+  }
+  .photo-thumb {
+    width: 32px; height: 32px;
+    border-radius: 5px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: transform 0.15s;
+  }
+  .photo-thumb:hover { transform: scale(1.5); border-color: var(--accent); }
 
-  /* 토스트 */
+  /* TOAST */
   .toast {
     position: fixed; top: 24px; right: 24px;
     background: var(--surface);
@@ -263,7 +348,34 @@
   .toast.success { border-color: var(--accent); }
   .toast.error { border-color: var(--danger); }
 
-  /* 경고 박스 */
+  /* MODAL (for photo viewer) */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 500;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal-photo {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 8px;
+  }
+  .modal-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  /* WARNING */
   .warning-box {
     background: rgba(251, 191, 36, 0.1);
     border: 1px solid var(--warning);
@@ -284,12 +396,13 @@
     .form-row { grid-template-columns: 1fr; }
     .header { padding: 14px 18px; }
     .container { padding: 16px; }
+    .chart-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
 
-<!-- PIN 화면 -->
+<!-- PIN -->
 <div class="pin-screen" id="pin-screen">
   <div class="pin-box">
     <h1>🔒 관리자 로그인</h1>
@@ -318,7 +431,7 @@
   </div>
 </div>
 
-<!-- 메인 -->
+<!-- MAIN -->
 <div id="admin-main" style="display:none">
   <div class="header">
     <h1>⚙️ 장비 사용 일지 관리자</h1>
@@ -334,14 +447,24 @@
     </div>
 
     <div class="tabs">
-      <button class="tab active" onclick="showPanel('panel-logs', this)">📋 기록</button>
+      <button class="tab active" onclick="showPanel('panel-dashboard', this)">📊 대시보드</button>
+      <button class="tab" onclick="showPanel('panel-logs', this)">📋 기록</button>
       <button class="tab" onclick="showPanel('panel-users', this)">👥 사용자</button>
       <button class="tab" onclick="showPanel('panel-prs', this)">🧪 PR 종류</button>
-      <button class="tab" onclick="showPanel('panel-equipment', this)">⚙️ 장비</button>
     </div>
 
-    <!-- 기록 패널 -->
-    <div class="panel active" id="panel-logs">
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="ppt-export-box">
+        <div class="icon">📊</div>
+        <div class="info">
+          <div class="title">월별 정산 PPT 다운로드</div>
+          <div class="sub">선택한 월의 통계, 차트, 사용자별 분석을 PowerPoint로 받습니다</div>
+        </div>
+        <select id="ppt-month-select"></select>
+        <button class="btn btn-primary" id="btn-export-ppt" onclick="exportPPT()">📥 PPT 다운로드</button>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-value" id="stat-total">-</div>
@@ -361,12 +484,57 @@
         </div>
       </div>
 
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">
+            <span>👥 사용자별 통계</span>
+            <div class="toggle" id="user-toggle">
+              <button onclick="toggleUserMetric('count', this)" class="active">기록 수</button>
+              <button onclick="toggleUserMetric('samples', this)">샘플 수</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-user"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title">
+            <span>🧪 PR별 사용 빈도</span>
+            <div class="toggle" id="pr-toggle">
+              <button onclick="togglePRMetric('count', this)" class="active">기록 수</button>
+              <button onclick="togglePRMetric('samples', this)">샘플 수</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-pr"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card full">
+          <div class="chart-title">
+            <span>📅 월별 사용량</span>
+            <div class="toggle" id="month-toggle">
+              <button onclick="toggleMonthMetric('count', this)" class="active">기록 수</button>
+              <button onclick="toggleMonthMetric('samples', this)">샘플 수</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-month"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="loadAll()" style="margin-top:8px">🔄 새로고침</button>
+    </div>
+
+    <!-- LOGS -->
+    <div class="panel" id="panel-logs">
       <div class="table-controls">
         <input type="text" id="search" placeholder="🔍 사용자/PR/메모로 검색..." oninput="renderLogs()">
         <button class="btn btn-primary" onclick="exportCSV()">📥 CSV 내보내기</button>
-        <button class="btn btn-secondary" onclick="loadLogs()">🔄 새로고침</button>
+        <button class="btn btn-secondary" onclick="loadAll()">🔄 새로고침</button>
       </div>
-
       <div class="table-wrap">
         <table>
           <thead>
@@ -376,17 +544,18 @@
               <th>PR</th>
               <th>샘플</th>
               <th>특이사항</th>
+              <th>사진</th>
               <th></th>
             </tr>
           </thead>
           <tbody id="logs-body">
-            <tr><td colspan="6" class="empty-row">로딩 중...</td></tr>
+            <tr><td colspan="7" class="empty-row">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- 사용자 패널 -->
+    <!-- USERS -->
     <div class="panel" id="panel-users">
       <h3 style="margin-bottom:14px">사용자 추가</h3>
       <div class="form-row">
@@ -400,13 +569,13 @@
         </div>
         <button class="btn btn-primary" onclick="addUser()">+ 추가</button>
       </div>
-      <h3 style="margin:20px 0 12px">등록된 사용자</h3>
+      <h3 style="margin:20px 0 12px">등록된 사용자 (<span id="users-count">0</span>명)</h3>
       <div class="list" id="users-list">
         <div style="padding:24px;text-align:center;color:var(--text-dim)">로딩 중...</div>
       </div>
     </div>
 
-    <!-- PR 패널 -->
+    <!-- PRs -->
     <div class="panel" id="panel-prs">
       <h3 style="margin-bottom:14px">PR 종류 추가</h3>
       <div class="form-row">
@@ -420,33 +589,25 @@
         </div>
         <button class="btn btn-primary" onclick="addPR()">+ 추가</button>
       </div>
-      <h3 style="margin:20px 0 12px">등록된 PR 종류</h3>
+      <h3 style="margin:20px 0 12px">등록된 PR 종류 (<span id="prs-count">0</span>개)</h3>
       <div class="list" id="prs-list">
         <div style="padding:24px;text-align:center;color:var(--text-dim)">로딩 중...</div>
       </div>
     </div>
-
-    <!-- 장비 패널 -->
-    <div class="panel" id="panel-equipment">
-      <h3 style="margin-bottom:14px">장비 정보</h3>
-      <div class="form-group" style="margin-bottom:14px;max-width:600px">
-        <label>장비명 *</label>
-        <input type="text" id="eq-name" placeholder="예: Spin Coater">
-      </div>
-      <div class="form-group" style="margin-bottom:14px;max-width:600px">
-        <label>위치/설명</label>
-        <input type="text" id="eq-location" placeholder="예: 302동 501호">
-      </div>
-      <button class="btn btn-primary" onclick="saveEquipment()">💾 저장</button>
-    </div>
   </div>
+</div>
+
+<!-- PHOTO MODAL -->
+<div class="modal-backdrop" id="photo-modal" onclick="closePhotoModal()">
+  <button class="modal-close" onclick="closePhotoModal()">✕</button>
+  <img class="modal-photo" id="modal-photo-img" src="" alt="">
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script src="config.js"></script>
 <script>
-// ===== Supabase REST API (Secret Key 사용 - 모든 권한) =====
+// ===== Supabase API =====
 function sbHeaders() {
   return {
     'apikey': SUPABASE_PUBLISHABLE_KEY,
@@ -457,7 +618,7 @@ function sbHeaders() {
 
 async function sbGet(path) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: sbHeaders() });
-  if (!res.ok) throw new Error(`GET ${path}: ${res.status}`);
+  if (!res.ok) throw new Error(`GET ${path}: ${res.status} ${await res.text()}`);
   return res.json();
 }
 
@@ -471,15 +632,6 @@ async function sbInsert(table, data) {
   return res.json();
 }
 
-async function sbUpdate(table, id, data) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: sbHeaders(),
-    body: JSON.stringify(data)
-  });
-  if (!res.ok) throw new Error(`UPDATE ${table}: ${res.status}`);
-}
-
 async function sbDelete(table, id) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
     method: 'DELETE',
@@ -490,6 +642,10 @@ async function sbDelete(table, id) {
 
 // ===== STATE =====
 let users = [], prs = [], logs = [], equipment = null;
+let userMetric = 'count';
+let prMetric = 'count';
+let monthMetric = 'count';
+let chartUser = null, chartPR = null, chartMonth = null;
 
 // ===== PIN =====
 let pinInput = '';
@@ -546,16 +702,20 @@ function toast(msg, type='success') {
 
 // ===== INIT =====
 async function init() {
-  // config 검증
   if (!SUPABASE_URL || SUPABASE_URL.includes('여기에_') ||
-      !SUPABASE_SECRET_KEY || SUPABASE_SECRET_KEY.includes('여기에_')) {
+      !SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY.includes('여기에_')) {
     document.getElementById('config-warning').style.display = 'block';
     document.getElementById('config-warning-msg').textContent =
-      'config.js에 SUPABASE_URL과 SUPABASE_SECRET_KEY를 입력하세요.';
+      'config.js에 SUPABASE_URL과 SUPABASE_PUBLISHABLE_KEY를 입력하세요.';
     return;
   }
+  await loadAll();
+}
 
+async function loadAll() {
   await Promise.all([loadUsers(), loadPRs(), loadLogs(), loadEquipment()]);
+  renderDashboard();
+  renderMonthSelect();
 }
 
 function showPanel(id, btn) {
@@ -563,6 +723,7 @@ function showPanel(id, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (btn) btn.classList.add('active');
+  if (id === 'panel-dashboard') setTimeout(renderCharts, 50);
 }
 
 // ===== USERS =====
@@ -570,11 +731,12 @@ async function loadUsers() {
   try {
     users = await sbGet('users?select=*&order=name.asc');
     renderUsers();
-  } catch (e) { toast('사용자 로드 실패', 'error'); console.error(e); }
+  } catch (e) { toast('사용자 로드 실패: ' + e.message, 'error'); console.error(e); }
 }
 
 function renderUsers() {
   const list = document.getElementById('users-list');
+  document.getElementById('users-count').textContent = users.length;
   if (users.length === 0) {
     list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-dim)">등록된 사용자가 없습니다</div>';
     return;
@@ -600,7 +762,7 @@ async function addUser() {
     document.getElementById('new-user-id').value = '';
     await loadUsers();
     toast(`✓ ${name} 추가됨`);
-  } catch (e) { toast('추가 실패', 'error'); console.error(e); }
+  } catch (e) { toast('추가 실패: ' + e.message, 'error'); console.error(e); }
 }
 
 async function removeUser(id) {
@@ -609,7 +771,7 @@ async function removeUser(id) {
     await sbDelete('users', id);
     await loadUsers();
     toast('삭제됨');
-  } catch (e) { toast('삭제 실패', 'error'); console.error(e); }
+  } catch (e) { toast('삭제 실패: ' + e.message, 'error'); console.error(e); }
 }
 
 // ===== PRs =====
@@ -617,11 +779,12 @@ async function loadPRs() {
   try {
     prs = await sbGet('prs?select=*&order=name.asc');
     renderPRs();
-  } catch (e) { toast('PR 로드 실패', 'error'); console.error(e); }
+  } catch (e) { toast('PR 로드 실패: ' + e.message, 'error'); console.error(e); }
 }
 
 function renderPRs() {
   const list = document.getElementById('prs-list');
+  document.getElementById('prs-count').textContent = prs.length;
   if (prs.length === 0) {
     list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-dim)">등록된 PR이 없습니다</div>';
     return;
@@ -647,7 +810,7 @@ async function addPR() {
     document.getElementById('new-pr-desc').value = '';
     await loadPRs();
     toast(`✓ ${name} 추가됨`);
-  } catch (e) { toast('추가 실패', 'error'); console.error(e); }
+  } catch (e) { toast('추가 실패: ' + e.message, 'error'); console.error(e); }
 }
 
 async function removePR(id) {
@@ -656,48 +819,28 @@ async function removePR(id) {
     await sbDelete('prs', id);
     await loadPRs();
     toast('삭제됨');
-  } catch (e) { toast('삭제 실패', 'error'); console.error(e); }
+  } catch (e) { toast('삭제 실패: ' + e.message, 'error'); console.error(e); }
 }
 
-// ===== EQUIPMENT =====
+// ===== EQUIPMENT (장비 정보는 PPT 헤더에 사용) =====
 async function loadEquipment() {
   try {
     const data = await sbGet('equipment?select=*&limit=1');
-    if (data.length > 0) {
-      equipment = data[0];
-      document.getElementById('eq-name').value = equipment.name || '';
-      document.getElementById('eq-location').value = equipment.location || '';
-    }
+    if (data.length > 0) equipment = data[0];
   } catch (e) { console.error(e); }
-}
-
-async function saveEquipment() {
-  const name = document.getElementById('eq-name').value.trim();
-  const location = document.getElementById('eq-location').value.trim();
-  if (!name) { toast('장비명을 입력하세요', 'error'); return; }
-  try {
-    if (equipment) {
-      await sbUpdate('equipment', equipment.id, { name, location, updated_at: new Date().toISOString() });
-    } else {
-      await sbInsert('equipment', { name, location });
-    }
-    await loadEquipment();
-    toast('✓ 저장됨');
-  } catch (e) { toast('저장 실패', 'error'); console.error(e); }
 }
 
 // ===== LOGS =====
 async function loadLogs() {
   try {
-    logs = await sbGet('logs?select=*&order=created_at.desc&limit=1000');
+    logs = await sbGet('logs?select=*&order=created_at.desc&limit=10000');
     renderLogs();
-    renderStats();
-  } catch (e) { toast('기록 로드 실패', 'error'); console.error(e); }
+  } catch (e) { toast('기록 로드 실패: ' + e.message, 'error'); console.error(e); }
 }
 
 function renderLogs() {
   const body = document.getElementById('logs-body');
-  const search = document.getElementById('search').value.toLowerCase().trim();
+  const search = (document.getElementById('search')?.value || '').toLowerCase().trim();
   const filtered = search ? logs.filter(l => {
     const u = users.find(x => x.id === l.user_id);
     const p = prs.find(x => x.id === l.pr_id);
@@ -708,7 +851,7 @@ function renderLogs() {
   }) : logs;
 
   if (filtered.length === 0) {
-    body.innerHTML = '<tr><td colspan="6" class="empty-row">기록이 없습니다</td></tr>';
+    body.innerHTML = '<tr><td colspan="7" class="empty-row">기록이 없습니다</td></tr>';
     return;
   }
 
@@ -717,6 +860,10 @@ function renderLogs() {
     const p = prs.find(x => x.id === log.pr_id);
     const userName = u ? u.name : (log.user_name_snapshot || '(삭제됨)');
     const prName = p ? p.name : (log.pr_name_snapshot || '(삭제됨)');
+    const photos = log.photo_urls || [];
+    const photoHtml = photos.length > 0
+      ? `<div class="photo-thumbs">${photos.map(url => `<img src="${url}" class="photo-thumb" onclick="openPhotoModal('${url}')">`).join('')}</div>`
+      : '-';
     return `
       <tr>
         <td>${formatDateTime(new Date(log.created_at))}</td>
@@ -724,6 +871,7 @@ function renderLogs() {
         <td>${escapeHtml(prName)}</td>
         <td style="text-align:center">${log.sample_count}</td>
         <td>${escapeHtml(log.note || '-')}</td>
+        <td>${photoHtml}</td>
         <td><button class="icon-btn" onclick="deleteLog(${log.id})">🗑</button></td>
       </tr>
     `;
@@ -734,28 +882,234 @@ async function deleteLog(id) {
   if (!confirm('이 기록을 삭제하시겠습니까?')) return;
   try {
     await sbDelete('logs', id);
-    await loadLogs();
+    await loadAll();
     toast('삭제됨');
-  } catch (e) { toast('삭제 실패', 'error'); console.error(e); }
+  } catch (e) { toast('삭제 실패: ' + e.message, 'error'); console.error(e); }
 }
 
-function renderStats() {
+function openPhotoModal(url) {
+  document.getElementById('modal-photo-img').src = url;
+  document.getElementById('photo-modal').classList.add('active');
+}
+function closePhotoModal() {
+  document.getElementById('photo-modal').classList.remove('active');
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
   document.getElementById('stat-total').textContent = logs.length;
-  const now = Date.now();
   const today = new Date(); today.setHours(0,0,0,0);
   const todayCount = logs.filter(l => new Date(l.created_at).getTime() >= today.getTime()).length;
   document.getElementById('stat-today').textContent = todayCount;
-  const weekAgo = now - 7 * 24 * 3600 * 1000;
+  const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
   const weekCount = logs.filter(l => new Date(l.created_at).getTime() >= weekAgo).length;
   document.getElementById('stat-week').textContent = weekCount;
   const totalSamples = logs.reduce((sum, l) => sum + (l.sample_count || 0), 0);
   document.getElementById('stat-samples').textContent = totalSamples;
+  renderCharts();
+}
+
+function renderCharts() {
+  renderUserChart();
+  renderPRChart();
+  renderMonthChart();
+}
+
+const chartColors = [
+  '#4ade80', '#60a5fa', '#a78bfa', '#fb923c', '#f87171',
+  '#fbbf24', '#34d399', '#22d3ee', '#f472b6', '#94a3b8'
+];
+
+function aggregateByUser(logsData) {
+  const stats = {};
+  logsData.forEach(l => {
+    const u = users.find(x => x.id === l.user_id);
+    const name = u ? u.name : (l.user_name_snapshot || '(삭제됨)');
+    if (!stats[name]) stats[name] = { count: 0, samples: 0 };
+    stats[name].count++;
+    stats[name].samples += (l.sample_count || 0);
+  });
+  return Object.entries(stats).sort((a,b) => b[1].count - a[1].count);
+}
+
+function aggregateByPR(logsData) {
+  const stats = {};
+  logsData.forEach(l => {
+    const p = prs.find(x => x.id === l.pr_id);
+    const name = p ? p.name : (l.pr_name_snapshot || '(삭제됨)');
+    if (!stats[name]) stats[name] = { count: 0, samples: 0 };
+    stats[name].count++;
+    stats[name].samples += (l.sample_count || 0);
+  });
+  return Object.entries(stats).sort((a,b) => b[1].count - a[1].count);
+}
+
+function renderUserChart() {
+  const canvas = document.getElementById('chart-user');
+  if (!canvas) return;
+  if (chartUser) { chartUser.destroy(); chartUser = null; }
+  const sorted = aggregateByUser(logs);
+  if (sorted.length === 0) {
+    canvas.parentElement.innerHTML = '<div class="chart-empty">기록이 없습니다</div>';
+    return;
+  }
+  const sortedM = sorted.slice().sort((a,b) => b[1][userMetric] - a[1][userMetric]);
+  chartUser = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: sortedM.map(s => s[0]),
+      datasets: [{
+        label: userMetric === 'count' ? '기록 수' : '샘플 수',
+        data: sortedM.map(s => s[1][userMetric]),
+        backgroundColor: chartColors.slice(0, sortedM.length),
+        borderRadius: 6
+      }]
+    },
+    options: chartOpts(userMetric === 'count' ? '기록 수' : '샘플 수')
+  });
+}
+
+function renderPRChart() {
+  const canvas = document.getElementById('chart-pr');
+  if (!canvas) return;
+  if (chartPR) { chartPR.destroy(); chartPR = null; }
+  const sorted = aggregateByPR(logs);
+  if (sorted.length === 0) {
+    canvas.parentElement.innerHTML = '<div class="chart-empty">기록이 없습니다</div>';
+    return;
+  }
+  const sortedM = sorted.slice().sort((a,b) => b[1][prMetric] - a[1][prMetric]);
+  chartPR = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: sortedM.map(s => s[0]),
+      datasets: [{
+        data: sortedM.map(s => s[1][prMetric]),
+        backgroundColor: chartColors.slice(0, sortedM.length),
+        borderColor: '#1a2130',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { color: '#e8ecf4', font: { size: 12 }, padding: 10 }
+        }
+      }
+    }
+  });
+}
+
+function renderMonthChart() {
+  const canvas = document.getElementById('chart-month');
+  if (!canvas) return;
+  if (chartMonth) { chartMonth.destroy(); chartMonth = null; }
+
+  const now = new Date();
+  const months = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
+      label: `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}`,
+      count: 0,
+      samples: 0
+    });
+  }
+  logs.forEach(l => {
+    const d = new Date(l.created_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const m = months.find(x => x.key === key);
+    if (m) {
+      m.count++;
+      m.samples += (l.sample_count || 0);
+    }
+  });
+
+  chartMonth = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: months.map(m => m.label),
+      datasets: [{
+        label: monthMetric === 'count' ? '기록 수' : '샘플 수',
+        data: months.map(m => m[monthMetric]),
+        backgroundColor: 'rgba(74, 222, 128, 0.1)',
+        borderColor: '#4ade80',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 4,
+        pointBackgroundColor: '#4ade80'
+      }]
+    },
+    options: chartOpts(monthMetric === 'count' ? '기록 수' : '샘플 수')
+  });
+}
+
+function chartOpts(yLabel) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#8a95ab' }, grid: { color: 'rgba(143, 149, 171, 0.1)' } },
+      y: {
+        ticks: { color: '#8a95ab', stepSize: 1 },
+        grid: { color: 'rgba(143, 149, 171, 0.1)' },
+        beginAtZero: true,
+        title: { display: true, text: yLabel, color: '#8a95ab' }
+      }
+    }
+  };
+}
+
+function toggleUserMetric(m, btn) {
+  userMetric = m;
+  document.querySelectorAll('#user-toggle button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderUserChart();
+}
+
+function togglePRMetric(m, btn) {
+  prMetric = m;
+  document.querySelectorAll('#pr-toggle button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPRChart();
+}
+
+function toggleMonthMetric(m, btn) {
+  monthMetric = m;
+  document.querySelectorAll('#month-toggle button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMonthChart();
+}
+
+// ===== MONTH SELECT (PPT용) =====
+function renderMonthSelect() {
+  const sel = document.getElementById('ppt-month-select');
+  // 기록이 있는 월들 + 현재 월
+  const monthsSet = new Set();
+  logs.forEach(l => {
+    const d = new Date(l.created_at);
+    monthsSet.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  });
+  const now = new Date();
+  monthsSet.add(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+
+  const arr = Array.from(monthsSet).sort().reverse();
+  sel.innerHTML = arr.map(m => {
+    const [y, mo] = m.split('-');
+    return `<option value="${m}">${y}년 ${parseInt(mo)}월</option>`;
+  }).join('');
 }
 
 // ===== CSV =====
 function exportCSV() {
   if (logs.length === 0) { toast('내보낼 기록이 없습니다', 'error'); return; }
-  const headers = ['일시','사용자','학번/사번','PR','PR 설명','샘플 갯수','특이사항'];
+  const headers = ['일시','사용자','학번/사번','PR','PR 설명','샘플 갯수','특이사항','사진수'];
   const rows = logs.map(log => {
     const u = users.find(x => x.id === log.user_id);
     const p = prs.find(x => x.id === log.pr_id);
@@ -766,7 +1120,8 @@ function exportCSV() {
       p ? p.name : (log.pr_name_snapshot || '(삭제됨)'),
       p ? (p.description || '') : '',
       log.sample_count,
-      (log.note || '').replace(/"/g, '""')
+      (log.note || '').replace(/"/g, '""'),
+      (log.photo_urls || []).length
     ];
   });
   const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
@@ -779,6 +1134,323 @@ function exportCSV() {
   a.click();
   URL.revokeObjectURL(url);
   toast('✓ CSV 다운로드 완료');
+}
+
+// ===== PPT EXPORT =====
+async function exportPPT() {
+  const monthKey = document.getElementById('ppt-month-select').value;
+  if (!monthKey) { toast('월을 선택하세요', 'error'); return; }
+
+  const btn = document.getElementById('btn-export-ppt');
+  btn.disabled = true;
+  btn.textContent = 'PPT 생성 중...';
+
+  try {
+    const [year, month] = monthKey.split('-').map(Number);
+    const start = new Date(year, month - 1, 1).getTime();
+    const end = new Date(year, month, 1).getTime();
+    const monthLogs = logs.filter(l => {
+      const t = new Date(l.created_at).getTime();
+      return t >= start && t < end;
+    });
+
+    if (monthLogs.length === 0) {
+      toast('해당 월에 기록이 없습니다', 'error');
+      btn.disabled = false;
+      btn.textContent = '📥 PPT 다운로드';
+      return;
+    }
+
+    const pptx = new PptxGenJS();
+    pptx.layout = 'LAYOUT_WIDE'; // 13.33 x 7.5 inch
+    pptx.title = `${equipment?.name || '장비'} 사용 일지 - ${year}년 ${month}월`;
+
+    const equipmentName = equipment?.name || '장비 사용 일지';
+    const totalSamples = monthLogs.reduce((sum, l) => sum + (l.sample_count || 0), 0);
+    const userStats = aggregateByUser(monthLogs);
+    const prStats = aggregateByPR(monthLogs);
+
+    // === SLIDE 1: 표지 ===
+    let slide = pptx.addSlide();
+    slide.background = { color: '0F1419' };
+    slide.addText(`${equipmentName}`, {
+      x: 0.5, y: 2.0, w: 12.3, h: 0.8,
+      fontSize: 36, bold: true, color: '4ADE80', fontFace: 'Calibri', align: 'center'
+    });
+    slide.addText(`사용 일지 월별 정산`, {
+      x: 0.5, y: 3.0, w: 12.3, h: 0.6,
+      fontSize: 24, color: 'E8ECF4', fontFace: 'Calibri', align: 'center'
+    });
+    slide.addText(`${year}년 ${month}월`, {
+      x: 0.5, y: 3.8, w: 12.3, h: 1.0,
+      fontSize: 48, bold: true, color: '60A5FA', fontFace: 'Calibri', align: 'center'
+    });
+    const generatedAt = new Date();
+    slide.addText(`생성일: ${formatDateTime(generatedAt)}`, {
+      x: 0.5, y: 6.5, w: 12.3, h: 0.3,
+      fontSize: 12, color: '8A95AB', fontFace: 'Calibri', align: 'center'
+    });
+
+    // === SLIDE 2: 요약 통계 ===
+    slide = pptx.addSlide();
+    slide.background = { color: '0F1419' };
+    slide.addText('📊 월간 요약', {
+      x: 0.5, y: 0.3, w: 12.3, h: 0.6,
+      fontSize: 28, bold: true, color: 'E8ECF4', fontFace: 'Calibri'
+    });
+    slide.addShape('line', {
+      x: 0.5, y: 1.0, w: 12.3, h: 0,
+      line: { color: '4ADE80', width: 2 }
+    });
+
+    // 4개의 통계 카드
+    const cards = [
+      { label: '총 기록 수', value: monthLogs.length.toString(), color: '4ADE80' },
+      { label: '총 샘플 수', value: totalSamples.toString(), color: '60A5FA' },
+      { label: '활동 사용자', value: userStats.length.toString(), color: 'A78BFA' },
+      { label: '사용된 PR 종류', value: prStats.length.toString(), color: 'FB923C' }
+    ];
+    const cardW = 2.8, cardH = 1.8, gap = 0.3;
+    const totalW = cards.length * cardW + (cards.length - 1) * gap;
+    const startX = (13.33 - totalW) / 2;
+    cards.forEach((c, i) => {
+      const x = startX + i * (cardW + gap);
+      slide.addShape('roundRect', {
+        x, y: 1.5, w: cardW, h: cardH,
+        fill: { color: '1A2130' },
+        line: { color: '2F3A52', width: 1 },
+        rectRadius: 0.1
+      });
+      slide.addText(c.value, {
+        x, y: 1.7, w: cardW, h: 0.9,
+        fontSize: 44, bold: true, color: c.color, fontFace: 'Calibri', align: 'center'
+      });
+      slide.addText(c.label, {
+        x, y: 2.7, w: cardW, h: 0.4,
+        fontSize: 14, color: '8A95AB', fontFace: 'Calibri', align: 'center'
+      });
+    });
+
+    // 일별 추이
+    const daily = {};
+    for (let d = 1; d <= 31; d++) daily[d] = 0;
+    monthLogs.forEach(l => {
+      const day = new Date(l.created_at).getDate();
+      daily[day] = (daily[day] || 0) + 1;
+    });
+    const lastDay = new Date(year, month, 0).getDate();
+    const dailyLabels = [];
+    const dailyData = [];
+    for (let d = 1; d <= lastDay; d++) {
+      dailyLabels.push(`${d}`);
+      dailyData.push(daily[d] || 0);
+    }
+    slide.addText('📅 일별 사용 추이', {
+      x: 0.5, y: 3.7, w: 12.3, h: 0.4,
+      fontSize: 18, bold: true, color: 'E8ECF4', fontFace: 'Calibri'
+    });
+    slide.addChart(pptx.ChartType.line, [{
+      name: '기록 수',
+      labels: dailyLabels,
+      values: dailyData
+    }], {
+      x: 0.5, y: 4.2, w: 12.3, h: 3.0,
+      chartColors: ['4ADE80'],
+      lineSize: 3,
+      lineDataSymbol: 'circle',
+      lineDataSymbolSize: 6,
+      catAxisLabelColor: '8A95AB',
+      valAxisLabelColor: '8A95AB',
+      catAxisLabelFontSize: 10,
+      valAxisLabelFontSize: 10,
+      showLegend: false,
+      showTitle: false,
+      plotArea: { fill: { color: '1A2130' } },
+      chartArea: { fill: { color: '0F1419' }, border: { color: '2F3A52', pt: 1 } }
+    });
+
+    // === SLIDE 3: 사용자별 통계 ===
+    slide = pptx.addSlide();
+    slide.background = { color: '0F1419' };
+    slide.addText('👥 사용자별 통계', {
+      x: 0.5, y: 0.3, w: 12.3, h: 0.6,
+      fontSize: 28, bold: true, color: 'E8ECF4', fontFace: 'Calibri'
+    });
+    slide.addShape('line', {
+      x: 0.5, y: 1.0, w: 12.3, h: 0,
+      line: { color: '4ADE80', width: 2 }
+    });
+
+    if (userStats.length > 0) {
+      // 막대 차트
+      slide.addChart(pptx.ChartType.bar, [{
+        name: '기록 수',
+        labels: userStats.map(s => s[0]),
+        values: userStats.map(s => s[1].count)
+      }, {
+        name: '샘플 수',
+        labels: userStats.map(s => s[0]),
+        values: userStats.map(s => s[1].samples)
+      }], {
+        x: 0.5, y: 1.4, w: 7.5, h: 5.7,
+        barDir: 'bar',
+        chartColors: ['4ADE80', '60A5FA'],
+        catAxisLabelColor: '8A95AB',
+        valAxisLabelColor: '8A95AB',
+        catAxisLabelFontSize: 11,
+        valAxisLabelFontSize: 10,
+        showLegend: true,
+        legendPos: 't',
+        legendColor: 'E8ECF4',
+        legendFontSize: 11,
+        showTitle: false,
+        plotArea: { fill: { color: '1A2130' } },
+        chartArea: { fill: { color: '0F1419' }, border: { color: '2F3A52', pt: 1 } }
+      });
+
+      // 표
+      const tableRows = [
+        [
+          { text: '사용자', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 12, fontFace: 'Calibri' } },
+          { text: '기록 수', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 12, fontFace: 'Calibri', align: 'center' } },
+          { text: '샘플 수', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 12, fontFace: 'Calibri', align: 'center' } }
+        ],
+        ...userStats.map(s => [
+          { text: s[0], options: { color: 'E8ECF4', fontSize: 11, fontFace: 'Calibri' } },
+          { text: String(s[1].count), options: { color: 'E8ECF4', fontSize: 11, fontFace: 'Calibri', align: 'center' } },
+          { text: String(s[1].samples), options: { color: 'E8ECF4', fontSize: 11, fontFace: 'Calibri', align: 'center' } }
+        ])
+      ];
+      slide.addTable(tableRows, {
+        x: 8.3, y: 1.4, w: 4.5,
+        colW: [2.0, 1.25, 1.25],
+        border: { type: 'solid', color: '2F3A52', pt: 1 },
+        fontSize: 11,
+        rowH: 0.4
+      });
+    }
+
+    // === SLIDE 4: PR별 통계 ===
+    slide = pptx.addSlide();
+    slide.background = { color: '0F1419' };
+    slide.addText('🧪 PR별 사용 통계', {
+      x: 0.5, y: 0.3, w: 12.3, h: 0.6,
+      fontSize: 28, bold: true, color: 'E8ECF4', fontFace: 'Calibri'
+    });
+    slide.addShape('line', {
+      x: 0.5, y: 1.0, w: 12.3, h: 0,
+      line: { color: '4ADE80', width: 2 }
+    });
+
+    if (prStats.length > 0) {
+      // 도넛 차트
+      slide.addChart(pptx.ChartType.doughnut, [{
+        name: '기록 수',
+        labels: prStats.map(s => s[0]),
+        values: prStats.map(s => s[1].count)
+      }], {
+        x: 0.5, y: 1.4, w: 6.5, h: 5.7,
+        chartColors: chartColors.map(c => c.replace('#','')),
+        showLegend: true,
+        legendPos: 'r',
+        legendColor: 'E8ECF4',
+        legendFontSize: 11,
+        showTitle: false,
+        showPercent: true,
+        dataLabelColor: 'FFFFFF',
+        dataLabelFontSize: 10,
+        plotArea: { fill: { color: '1A2130' } },
+        chartArea: { fill: { color: '0F1419' }, border: { color: '2F3A52', pt: 1 } }
+      });
+
+      // 표
+      const prTableRows = [
+        [
+          { text: 'PR 종류', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 12, fontFace: 'Calibri' } },
+          { text: '기록 수', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 12, fontFace: 'Calibri', align: 'center' } },
+          { text: '샘플 수', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 12, fontFace: 'Calibri', align: 'center' } }
+        ],
+        ...prStats.map(s => [
+          { text: s[0], options: { color: 'E8ECF4', fontSize: 11, fontFace: 'Calibri' } },
+          { text: String(s[1].count), options: { color: 'E8ECF4', fontSize: 11, fontFace: 'Calibri', align: 'center' } },
+          { text: String(s[1].samples), options: { color: 'E8ECF4', fontSize: 11, fontFace: 'Calibri', align: 'center' } }
+        ])
+      ];
+      slide.addTable(prTableRows, {
+        x: 7.3, y: 1.4, w: 5.5,
+        colW: [2.7, 1.4, 1.4],
+        border: { type: 'solid', color: '2F3A52', pt: 1 },
+        fontSize: 11,
+        rowH: 0.4
+      });
+    }
+
+    // === SLIDE 5+: 상세 기록 (페이지당 15개씩) ===
+    const itemsPerPage = 15;
+    const sortedLogs = monthLogs.slice().sort((a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    const totalPages = Math.ceil(sortedLogs.length / itemsPerPage);
+
+    for (let p = 0; p < totalPages; p++) {
+      slide = pptx.addSlide();
+      slide.background = { color: '0F1419' };
+      slide.addText(`📋 상세 기록 (${p+1}/${totalPages})`, {
+        x: 0.5, y: 0.3, w: 12.3, h: 0.6,
+        fontSize: 24, bold: true, color: 'E8ECF4', fontFace: 'Calibri'
+      });
+      slide.addShape('line', {
+        x: 0.5, y: 1.0, w: 12.3, h: 0,
+        line: { color: '4ADE80', width: 2 }
+      });
+
+      const pageLogs = sortedLogs.slice(p * itemsPerPage, (p+1) * itemsPerPage);
+      const headerRow = [
+        { text: '일시', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 11, fontFace: 'Calibri' } },
+        { text: '사용자', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 11, fontFace: 'Calibri' } },
+        { text: 'PR', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 11, fontFace: 'Calibri' } },
+        { text: '샘플', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 11, fontFace: 'Calibri', align: 'center' } },
+        { text: '특이사항', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 11, fontFace: 'Calibri' } },
+        { text: '사진', options: { bold: true, color: 'FFFFFF', fill: { color: '242D40' }, fontSize: 11, fontFace: 'Calibri', align: 'center' } }
+      ];
+
+      const dataRows = pageLogs.map(log => {
+        const u = users.find(x => x.id === log.user_id);
+        const pr = prs.find(x => x.id === log.pr_id);
+        const userName = u ? u.name : (log.user_name_snapshot || '(삭제됨)');
+        const prName = pr ? pr.name : (log.pr_name_snapshot || '(삭제됨)');
+        return [
+          { text: formatDateTime(new Date(log.created_at)), options: { color: 'E8ECF4', fontSize: 9, fontFace: 'Calibri' } },
+          { text: userName, options: { color: 'E8ECF4', fontSize: 10, fontFace: 'Calibri' } },
+          { text: prName, options: { color: 'E8ECF4', fontSize: 10, fontFace: 'Calibri' } },
+          { text: String(log.sample_count), options: { color: 'E8ECF4', fontSize: 10, fontFace: 'Calibri', align: 'center' } },
+          { text: log.note || '-', options: { color: 'E8ECF4', fontSize: 9, fontFace: 'Calibri' } },
+          { text: (log.photo_urls || []).length > 0 ? `${log.photo_urls.length}장` : '-', options: { color: 'E8ECF4', fontSize: 10, fontFace: 'Calibri', align: 'center' } }
+        ];
+      });
+
+      slide.addTable([headerRow, ...dataRows], {
+        x: 0.5, y: 1.3, w: 12.3,
+        colW: [1.8, 1.5, 2.0, 0.8, 5.0, 1.2],
+        border: { type: 'solid', color: '2F3A52', pt: 1 },
+        fontSize: 10,
+        rowH: 0.35
+      });
+    }
+
+    // 다운로드
+    const fileName = `${equipmentName}_${year}년_${month}월_정산.pptx`;
+    await pptx.writeFile({ fileName });
+
+    toast('✓ PPT 다운로드 완료');
+    btn.disabled = false;
+    btn.textContent = '📥 PPT 다운로드';
+  } catch (e) {
+    console.error(e);
+    toast('❌ PPT 생성 실패: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '📥 PPT 다운로드';
+  }
 }
 
 // ===== HELPERS =====
